@@ -84,16 +84,24 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   public XMLConfigBuilder(InputStream inputStream, String environment, Properties props) {
+
     this(Configuration.class, inputStream, environment, props);
   }
 
   public XMLConfigBuilder(Class<? extends Configuration> configClass, InputStream inputStream, String environment,
       Properties props) {
+
+    // 【解析XML为Document】XPathParse基于Java XPath解析器，用于解析MyBatis中的配置文件
     this(configClass, new XPathParser(inputStream, true, props, new XMLMapperEntityResolver()), environment, props);
   }
 
   private XMLConfigBuilder(Class<? extends Configuration> configClass, XPathParser parser, String environment,
       Properties props) {
+
+    /**
+     * 创建Configuration，并通过TypeAliasRegistry注册一些Mybatis内部相关类的别名
+     * 【核心】new {@link Configuration} 全局配置对象
+     */
     super(newConfig(configClass));
     ErrorContext.instance().resource("SQL Mapper Configuration");
     this.configuration.setVariables(props);

@@ -66,6 +66,11 @@ public class SqlSessionFactoryBuilder {
     return build(inputStream, null, null);
   }
 
+  /**
+   * @param inputStream mybatis-config.xml配置文件的输入流
+   * @param environment 运行环境信息的id值，对应mybatis-config.xml中的<environments>标签的id属性值
+   * @return
+   */
   public SqlSessionFactory build(InputStream inputStream, String environment) {
     return build(inputStream, environment, null);
   }
@@ -76,6 +81,8 @@ public class SqlSessionFactoryBuilder {
 
   public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
     try {
+
+      // XMLConfigBuilder：用来解析XML配置文件。这里用了构建者模式
       XMLConfigBuilder parser = new XMLConfigBuilder(inputStream, environment, properties);
       return build(parser.parse());
     } catch (Exception e) {

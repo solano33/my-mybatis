@@ -65,6 +65,8 @@ public class ClassLoaderWrapper {
    *
    * @param resource - the resource to find
    * @return the stream or null
+   *
+   * 注意：这里只是做了加载，并没有完成解析
    */
   public InputStream getResourceAsStream(String resource) {
     return getResourceAsStream(resource, getClassLoaders(null));

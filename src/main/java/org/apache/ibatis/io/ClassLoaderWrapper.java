@@ -22,10 +22,13 @@ import java.net.URL;
  * A class to wrap access to multiple class loaders making them work as one
  *
  * @author Clinton Begin
+ * 对多个ClassLoader进行包装
  */
 public class ClassLoaderWrapper {
 
+  // 默认类加载器
   ClassLoader defaultClassLoader;
+  // 系统类加载器
   ClassLoader systemClassLoader;
 
   ClassLoaderWrapper() {
@@ -39,9 +42,7 @@ public class ClassLoaderWrapper {
   /**
    * Get a resource as a URL using the current class path
    *
-   * @param resource
-   *          - the resource to locate
-   *
+   * @param resource - the resource to locate
    * @return the resource or null
    */
   public URL getResourceAsURL(String resource) {
@@ -51,11 +52,8 @@ public class ClassLoaderWrapper {
   /**
    * Get a resource from the classpath, starting with a specific class loader
    *
-   * @param resource
-   *          - the resource to find
-   * @param classLoader
-   *          - the first classloader to try
-   *
+   * @param resource    - the resource to find
+   * @param classLoader - the first classloader to try
    * @return the stream or null
    */
   public URL getResourceAsURL(String resource, ClassLoader classLoader) {
@@ -65,9 +63,7 @@ public class ClassLoaderWrapper {
   /**
    * Get a resource from the classpath
    *
-   * @param resource
-   *          - the resource to find
-   *
+   * @param resource - the resource to find
    * @return the stream or null
    */
   public InputStream getResourceAsStream(String resource) {
@@ -77,11 +73,8 @@ public class ClassLoaderWrapper {
   /**
    * Get a resource from the classpath, starting with a specific class loader
    *
-   * @param resource
-   *          - the resource to find
-   * @param classLoader
-   *          - the first class loader to try
-   *
+   * @param resource    - the resource to find
+   * @param classLoader - the first class loader to try
    * @return the stream or null
    */
   public InputStream getResourceAsStream(String resource, ClassLoader classLoader) {
@@ -91,13 +84,9 @@ public class ClassLoaderWrapper {
   /**
    * Find a class on the classpath (or die trying)
    *
-   * @param name
-   *          - the class to look for
-   *
+   * @param name - the class to look for
    * @return - the class
-   *
-   * @throws ClassNotFoundException
-   *           Duh.
+   * @throws ClassNotFoundException Duh.
    */
   public Class<?> classForName(String name) throws ClassNotFoundException {
     return classForName(name, getClassLoaders(null));
@@ -106,15 +95,10 @@ public class ClassLoaderWrapper {
   /**
    * Find a class on the classpath, starting with a specific classloader (or die trying)
    *
-   * @param name
-   *          - the class to look for
-   * @param classLoader
-   *          - the first classloader to try
-   *
+   * @param name        - the class to look for
+   * @param classLoader - the first classloader to try
    * @return - the class
-   *
-   * @throws ClassNotFoundException
-   *           Duh.
+   * @throws ClassNotFoundException Duh.
    */
   public Class<?> classForName(String name, ClassLoader classLoader) throws ClassNotFoundException {
     return classForName(name, getClassLoaders(classLoader));
@@ -123,14 +107,13 @@ public class ClassLoaderWrapper {
   /**
    * Try to get a resource from a group of classloaders
    *
-   * @param resource
-   *          - the resource to get
-   * @param classLoader
-   *          - the classloaders to examine
-   *
+   * @param resource    - the resource to get
+   * @param classLoader - the classloaders to examine
    * @return the resource or null
    */
   InputStream getResourceAsStream(String resource, ClassLoader[] classLoader) {
+
+    // 循环ClassLoader，通过指定或默认的ClassLoader读取文件
     for (ClassLoader cl : classLoader) {
       if (null != cl) {
 
@@ -138,10 +121,12 @@ public class ClassLoaderWrapper {
         InputStream returnValue = cl.getResourceAsStream(resource);
 
         // now, some class loaders want this leading "/", so we'll add it and try again if we didn't find the resource
+        // 重试：有一些classLoader需要在前面加上"/"，所以我们在前面加上"/"再次尝试
         if (null == returnValue) {
           returnValue = cl.getResourceAsStream("/" + resource);
         }
 
+        // 如果读取到了，终止循环，返回结果
         if (null != returnValue) {
           return returnValue;
         }
@@ -153,11 +138,8 @@ public class ClassLoaderWrapper {
   /**
    * Get a resource as a URL using the current class path
    *
-   * @param resource
-   *          - the resource to locate
-   * @param classLoader
-   *          - the class loaders to examine
-   *
+   * @param resource    - the resource to locate
+   * @param classLoader - the class loaders to examine
    * @return the resource or null
    */
   URL getResourceAsURL(String resource, ClassLoader[] classLoader) {
@@ -195,15 +177,10 @@ public class ClassLoaderWrapper {
   /**
    * Attempt to load a class from a group of classloaders
    *
-   * @param name
-   *          - the class to load
-   * @param classLoader
-   *          - the group of classloaders to examine
-   *
+   * @param name        - the class to load
+   * @param classLoader - the group of classloaders to examine
    * @return the class
-   *
-   * @throws ClassNotFoundException
-   *           - Remember the wisdom of Judge Smails: Well, the world needs ditch diggers, too.
+   * @throws ClassNotFoundException - Remember the wisdom of Judge Smails: Well, the world needs ditch diggers, too.
    */
   Class<?> classForName(String name, ClassLoader[] classLoader) throws ClassNotFoundException {
 
@@ -228,8 +205,22 @@ public class ClassLoaderWrapper {
   }
 
   ClassLoader[] getClassLoaders(ClassLoader classLoader) {
-    return new ClassLoader[] { classLoader, defaultClassLoader, Thread.currentThread().getContextClassLoader(),
-        getClass().getClassLoader(), systemClassLoader };
+    return new ClassLoader[]{
+
+      // 参数指定的类加载器
+      classLoader,
+
+      // 系统指定的默认类加载器
+      defaultClassLoader,
+
+      // 当前线程绑定的类加载器
+      Thread.currentThread().getContextClassLoader(),
+
+      // 当前类使用的类加载器
+      getClass().getClassLoader(),
+
+      // 系统类加载器
+      systemClassLoader};
   }
 
 }

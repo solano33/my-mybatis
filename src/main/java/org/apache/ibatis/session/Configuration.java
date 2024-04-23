@@ -99,11 +99,13 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
  * @author Clinton Begin
+ * 【核心】Mybatis全局配置对象
  */
 public class Configuration {
 
   protected Environment environment;
 
+  // 允许在嵌套语句中使用分页(RowBounds)。如果允许使用则设置为false。默认为false
   protected boolean safeRowBoundsEnabled;
   protected boolean safeResultHandlerEnabled = true;
   protected boolean mapUnderscoreToCamelCase;
@@ -189,13 +191,18 @@ public class Configuration {
   }
 
   public Configuration() {
+
+    // TypeAliasRegistry：类型别名注册器
+    // 注册事务工厂的别名
     typeAliasRegistry.registerAlias("JDBC", JdbcTransactionFactory.class);
     typeAliasRegistry.registerAlias("MANAGED", ManagedTransactionFactory.class);
 
+    // 注册数据源的别名
     typeAliasRegistry.registerAlias("JNDI", JndiDataSourceFactory.class);
     typeAliasRegistry.registerAlias("POOLED", PooledDataSourceFactory.class);
     typeAliasRegistry.registerAlias("UNPOOLED", UnpooledDataSourceFactory.class);
 
+    // 注册缓存策略的别名
     typeAliasRegistry.registerAlias("PERPETUAL", PerpetualCache.class);
     typeAliasRegistry.registerAlias("FIFO", FifoCache.class);
     typeAliasRegistry.registerAlias("LRU", LruCache.class);

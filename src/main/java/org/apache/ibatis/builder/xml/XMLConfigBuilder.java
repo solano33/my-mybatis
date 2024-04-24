@@ -111,6 +111,8 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   public Configuration parse() {
+
+    // 这个配置文件只需要被解析一次
     if (parsed) {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }
@@ -125,20 +127,30 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void parseConfiguration(XNode root) {
     try {
       // issue #117 read properties first
+      // 解析<properties>标签
       propertiesElement(root.evalNode("properties"));
+      // 解析<settings>标签
       Properties settings = settingsAsProperties(root.evalNode("settings"));
       loadCustomVfsImpl(settings);
       loadCustomLogImpl(settings);
+
+      // 解析<typeAliases>标签
       typeAliasesElement(root.evalNode("typeAliases"));
+
+      // 解析<plugins>标签
       pluginsElement(root.evalNode("plugins"));
       objectFactoryElement(root.evalNode("objectFactory"));
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
       settingsElement(settings);
+
       // read it after objectFactory and objectWrapperFactory issue #631
+      // 解析<environments>标签，这里会解析数据源和事务管理器
       environmentsElement(root.evalNode("environments"));
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
       typeHandlersElement(root.evalNode("typeHandlers"));
+
+      // 解析<mappers>标签，加载映射文件
       mappersElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -220,6 +232,8 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private void objectFactoryElement(XNode context) throws Exception {
+
+    // 为null表示没有配置
     if (context != null) {
       String type = context.getStringAttribute("type");
       Properties properties = context.getChildrenAsProperties();
@@ -310,17 +324,49 @@ public class XMLConfigBuilder extends BaseBuilder {
     if (context == null) {
       return;
     }
+
+    // 这里的environment可能在之前new SqlSessionFactoryBuilder().build(inputStream, environment)时传入.
+    // 如果没有传入，也就是null时，会使用<environments>标签中default属性指定的环境
     if (environment == null) {
+      // <environments de>
+      /**
+       * <environments default="development">
+       *  <environment id="development">
+       *    <transactionManager type="JDBC"/>
+       *      <dataSource type="POOLED">
+       *        <property name="driver" value="${driver}"/>
+       *        <property name="url" value="${url}"/>
+       *        <property name="username" value="${username}"/>
+       *        <property name="password" value="${password}"/>
+       *      </dataSource>
+       *  </environment>
+       * </environments>
+       */
       environment = context.getStringAttribute("default");
     }
+
+    // 遍历解析<environment>节点
     for (XNode child : context.getChildren()) {
+
+      // <environment id="development">
       String id = child.getStringAttribute("id");
+
+      /**
+       * 判断id和指定的{@link environment}是否一致
+       */
       if (isSpecifiedEnvironment(id)) {
+
+        // <transactionManager type="JDBC"/> 创建事务工厂对象
         TransactionFactory txFactory = transactionManagerElement(child.evalNode("transactionManager"));
+
+        // <dataSource type="POOLED"> 创建数据源工厂对象
         DataSourceFactory dsFactory = dataSourceElement(child.evalNode("dataSource"));
         DataSource dataSource = dsFactory.getDataSource();
+
+        // 解析完后进行封装赋值
         Environment.Builder environmentBuilder = new Environment.Builder(id).transactionFactory(txFactory)
             .dataSource(dataSource);
+        // 将环境信息设置到Configuration中。像其他的解析方法也都会调用类似的方法，将配置信息设置到Configuration中
         configuration.setEnvironment(environmentBuilder.build());
         break;
       }
@@ -401,17 +447,25 @@ public class XMLConfigBuilder extends BaseBuilder {
     if (context == null) {
       return;
     }
+
+    // 遍历<mappers>标签下的所有子标签，可能包含<package>、<mapper>子标签
     for (XNode child : context.getChildren()) {
       if ("package".equals(child.getName())) {
         String mapperPackage = child.getStringAttribute("name");
         configuration.addMappers(mapperPackage);
       } else {
+        // <mapper resource="org/mybatis/builder/AuthorMapper.xml"/>
         String resource = child.getStringAttribute("resource");
+        // <mapper url="file:///var/mappers/AuthorMapper.xml"/>
         String url = child.getStringAttribute("url");
+        // <mapper class="org.mybatis.builder.AuthorMapper"/>
         String mapperClass = child.getStringAttribute("class");
+
+        // 这里标识了这三种配置是互斥的
         if (resource != null && url == null && mapperClass == null) {
           ErrorContext.instance().resource(resource);
           try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
+            // 专门用来解析Mapper映射文件的XMLMapperBuilder
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource,
                 configuration.getSqlFragments());
             mapperParser.parse();

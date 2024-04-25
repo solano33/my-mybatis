@@ -150,7 +150,7 @@ public class XMLConfigBuilder extends BaseBuilder {
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
       typeHandlersElement(root.evalNode("typeHandlers"));
 
-      // 解析<mappers>标签，加载映射文件
+      // 【核心】1. 解析<mappers>标签  2. 加载映射文件，将sql文件解析成MappedStatement对象
       mappersElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -465,9 +465,10 @@ public class XMLConfigBuilder extends BaseBuilder {
         if (resource != null && url == null && mapperClass == null) {
           ErrorContext.instance().resource(resource);
           try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
-            // 专门用来解析Mapper映射文件的XMLMapperBuilder
+            // 【核心】解析mapper配置文件。专门用来解析Mapper映射文件的XMLMapperBuilder，这里只是解析成Document对象
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource,
                 configuration.getSqlFragments());
+            // 将Document对象解析为Mapper对象
             mapperParser.parse();
           }
         } else if (resource == null && url != null && mapperClass == null) {

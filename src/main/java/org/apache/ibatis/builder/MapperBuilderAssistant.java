@@ -100,6 +100,8 @@ public class MapperBuilderAssistant extends BaseBuilder {
         throw new BuilderException("Dots are not allowed in element names, please remove it from " + base);
       }
     }
+
+    // 其实就是：namespace.id
     return currentNamespace + "." + base;
   }
 
@@ -207,6 +209,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
 
     id = applyCurrentNamespace(id, false);
 
+    // 这里就是将解析出来的各个配置赋值到MappedStatement对象中
     MappedStatement.Builder statementBuilder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType)
         .resource(resource).fetchSize(fetchSize).timeout(timeout).statementType(statementType)
         .keyGenerator(keyGenerator).keyProperty(keyProperty).keyColumn(keyColumn).databaseId(databaseId).lang(lang)
@@ -219,7 +222,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       statementBuilder.parameterMap(statementParameterMap);
     }
 
+    // 有多少个crud语句，就对应着有多少个MappedStatement对象
     MappedStatement statement = statementBuilder.build();
+    // 添加到configuration中。key为statementId(namespace.id), value为MappedStatement对象
     configuration.addMappedStatement(statement);
     return statement;
   }

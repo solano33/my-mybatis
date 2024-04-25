@@ -54,6 +54,10 @@ import org.apache.ibatis.type.TypeHandler;
 public class XMLMapperBuilder extends BaseBuilder {
 
   private final XPathParser parser;
+
+  /**
+   * 构建MappedStatement的助手类
+   */
   private final MapperBuilderAssistant builderAssistant;
   private final Map<String, XNode> sqlFragments;
   private final String resource;
@@ -94,7 +98,10 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   public void parse() {
+    // mapper映射文件是否已经加载过
     if (!configuration.isResourceLoaded(resource)) {
+
+      // 从映射文件中的mapper根标签开始解析，直到完整的文件解析完毕
       configurationElement(parser.evalNode("/mapper"));
       configuration.addLoadedResource(resource);
       bindMapperForNamespace();
@@ -110,7 +117,9 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void configurationElement(XNode context) {
     try {
+      // <mapper namespace="org.apache.ibatis.submitted.map_key_column.PersonMapper">, 获取namespace属性值
       String namespace = context.getStringAttribute("namespace");
+      // 如果namespace属性值不允许为空
       if (namespace == null || namespace.isEmpty()) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
@@ -120,6 +129,8 @@ public class XMLMapperBuilder extends BaseBuilder {
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
       resultMapElements(context.evalNodes("/mapper/resultMap"));
       sqlElement(context.evalNodes("/mapper/sql"));
+
+      // 【核心】这里解析select|insert|update|delete标签，解析成MappedStatement对象，并添加到Configuration的mappedStatements集合中
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);
@@ -130,14 +141,19 @@ public class XMLMapperBuilder extends BaseBuilder {
     if (configuration.getDatabaseId() != null) {
       buildStatementFromContext(list, configuration.getDatabaseId());
     }
+    // 【核心】构建MappedStatement对象
     buildStatementFromContext(list, null);
   }
 
   private void buildStatementFromContext(List<XNode> list, String requiredDatabaseId) {
     for (XNode context : list) {
+
+      // MappedStatement解析器
       final XMLStatementBuilder statementParser = new XMLStatementBuilder(configuration, builderAssistant, context,
           requiredDatabaseId);
       try {
+
+        // 【核心】解析select|insert|update|delete标签，解析成MappedStatement对象，并添加到Configuration的mappedStatements集合中
         statementParser.parseStatementNode();
       } catch (IncompleteElementException e) {
         configuration.addIncompleteStatement(statementParser);

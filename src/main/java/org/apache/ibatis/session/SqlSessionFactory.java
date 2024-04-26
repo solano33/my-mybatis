@@ -26,12 +26,24 @@ public interface SqlSessionFactory {
 
   SqlSession openSession();
 
+  /**
+   * 是否要进行事务自动提交
+   */
   SqlSession openSession(boolean autoCommit);
 
+  /**
+   * 指定数据库连接
+   */
   SqlSession openSession(Connection connection);
 
+  /**
+   * 事务隔离级别
+   */
   SqlSession openSession(TransactionIsolationLevel level);
 
+  /**
+   * 指定执行器类型
+   */
   SqlSession openSession(ExecutorType execType);
 
   SqlSession openSession(ExecutorType execType, boolean autoCommit);

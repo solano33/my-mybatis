@@ -112,6 +112,8 @@ public class Configuration {
   protected boolean aggressiveLazyLoading;
   protected boolean multipleResultSetsEnabled = true;
   protected boolean useGeneratedKeys;
+
+  // 是否启用缓存：默认为true
   protected boolean useColumnLabel = true;
   protected boolean cacheEnabled = true;
   protected boolean callSettersOnNulls;
@@ -132,6 +134,8 @@ public class Configuration {
   protected Integer defaultStatementTimeout;
   protected Integer defaultFetchSize;
   protected ResultSetType defaultResultSetType;
+
+  // 默认执行器类型
   protected ExecutorType defaultExecutorType = ExecutorType.SIMPLE;
   protected AutoMappingBehavior autoMappingBehavior = AutoMappingBehavior.PARTIAL;
   protected AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior = AutoMappingUnknownColumnBehavior.NONE;
@@ -742,9 +746,13 @@ public class Configuration {
     } else {
       executor = new SimpleExecutor(this, transaction);
     }
+
+    // 这里标识了如果允许缓存，则会通过CachingExecutor去进行装饰
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
+
+    // 拦截器插件
     return (Executor) interceptorChain.pluginAll(executor);
   }
 

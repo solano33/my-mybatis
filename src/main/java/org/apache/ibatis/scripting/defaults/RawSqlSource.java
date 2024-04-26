@@ -41,8 +41,11 @@ public class RawSqlSource implements SqlSource {
   }
 
   public RawSqlSource(Configuration configuration, String sql, Class<?> parameterType) {
+    // SQL语句解析工具，这里只是new出来，啥也没干
     SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
+    // 获取入参类型
     Class<?> clazz = parameterType == null ? Object.class : parameterType;
+    //开始解析
     sqlSource = sqlSourceParser.parse(sql, clazz, new HashMap<>());
   }
 
@@ -52,6 +55,11 @@ public class RawSqlSource implements SqlSource {
     return context.getSql();
   }
 
+  /**
+   * 这里sql只会解析一次，然后以后再拿的时候只会用之前解析过的
+   * @param parameterObject
+   * @return
+   */
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
     return sqlSource.getBoundSql(parameterObject);

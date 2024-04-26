@@ -43,11 +43,17 @@ public class SqlSourceBuilder extends BaseBuilder {
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType,
         additionalParameters);
+    // 创建分词解析器
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
     String sql;
     if (configuration.isShrinkWhitespacesInSql()) {
       sql = parser.parse(removeExtraWhitespaces(originalSql));
     } else {
+      /**
+       * 【核心】解析sql中的#{}。
+       *        将#{id}中的id封装成ParameterMapping，#{}替换成?
+       * {@link SqlSourceBuilder.ParameterMappingTokenHandler#handleToken(String)}
+       */
       sql = parser.parse(originalSql);
     }
     return new StaticSqlSource(configuration, sql, handler.getParameterMappings());

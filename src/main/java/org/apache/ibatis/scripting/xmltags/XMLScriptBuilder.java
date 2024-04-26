@@ -47,6 +47,8 @@ public class XMLScriptBuilder extends BaseBuilder {
     super(configuration);
     this.context = context;
     this.parameterType = parameterType;
+
+    // 初始化动态SQL中的节点处理器集合
     initNodeHandlerMap();
   }
 
@@ -62,12 +64,27 @@ public class XMLScriptBuilder extends BaseBuilder {
     nodeHandlerMap.put("bind", new BindHandler());
   }
 
+  /**
+   * 解析select|insert|update|delete标签中的SQL语句，最终将解析到的SqlNode封装到MixedSqlNode中的List集合中
+   *
+   * @return
+   */
   public SqlSource parseScriptNode() {
+
+    /**
+     * 解析动态tags
+     *  1. 将带有${}的SQL信息封装到TextSqlNode中
+     *  2. 将带有#{}的SQL信息封装到StaticTextSqlNode中
+     *  3. 将动态SQL标签中的SQL信息分别封装到不同的SqlNode中
+     */
     MixedSqlNode rootSqlNode = parseDynamicTags(context);
     SqlSource sqlSource;
+
+    // isDynamic：标识SQL中包含${}或动态SQL，则将SqlNode封装到DynamicSqlSource
     if (isDynamic) {
       sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
     } else {
+      // 如果SQL中只有sql文本或者只包含#{}，则将SqlNode封装到RawSqlSource中，并指定parameterType
       sqlSource = new RawSqlSource(configuration, rootSqlNode, parameterType);
     }
     return sqlSource;
@@ -75,25 +92,46 @@ public class XMLScriptBuilder extends BaseBuilder {
 
   protected MixedSqlNode parseDynamicTags(XNode node) {
     List<SqlNode> contents = new ArrayList<>();
+
+
+    /**
+     * 获取<select>\<insert>等4个标签的子节点，子节点包括【元素节点】和【文本节点】
+     * <select>
+     *   select * from blog where state = #{state}            【文本节点】
+     *   <choose>                                             【元素节点】
+     *     <when test="title != null">
+     *        and title like #{title}
+     *     </when>
+     *   </choose>
+     * </select>
+     */
     NodeList children = node.getNode().getChildNodes();
     for (int i = 0; i < children.getLength(); i++) {
       XNode child = node.newXNode(children.item(i));
+
+      // 文本节点
       if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) {
         String data = child.getStringBody("");
         TextSqlNode textSqlNode = new TextSqlNode(data);
+        // 如果SQL文本中带有${}的话，就表示是dynamic的
         if (textSqlNode.isDynamic()) {
           contents.add(textSqlNode);
           isDynamic = true;
         } else {
+          // SQL文本中如果不包含${}和下面的动态SQL标签，就都是static的
           contents.add(new StaticTextSqlNode(data));
         }
-      } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
+      }
+      // 元素标签节点
+      else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
         String nodeName = child.getNode().getNodeName();
+        // 动态标签处理器
         NodeHandler handler = nodeHandlerMap.get(nodeName);
         if (handler == null) {
           throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
         }
         handler.handleNode(child, contents);
+        // 如果包含元素节点标签，就表示是dynamic
         isDynamic = true;
       }
     }
@@ -177,7 +215,7 @@ public class XMLScriptBuilder extends BaseBuilder {
       String close = nodeToHandle.getStringAttribute("close");
       String separator = nodeToHandle.getStringAttribute("separator");
       ForEachSqlNode forEachSqlNode = new ForEachSqlNode(configuration, mixedSqlNode, collection, nullable, index, item,
-          open, close, separator);
+        open, close, separator);
       targetContents.add(forEachSqlNode);
     }
   }
@@ -224,7 +262,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     }
 
     private void handleWhenOtherwiseNodes(XNode chooseSqlNode, List<SqlNode> ifSqlNodes,
-        List<SqlNode> defaultSqlNodes) {
+                                          List<SqlNode> defaultSqlNodes) {
       List<XNode> children = chooseSqlNode.getChildren();
       for (XNode child : children) {
         String nodeName = child.getNode().getNodeName();

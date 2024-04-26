@@ -15,6 +15,8 @@
  */
 package org.apache.ibatis.parsing;
 
+import org.apache.ibatis.builder.SqlSourceBuilder;
+
 /**
  * @author Clinton Begin
  */
@@ -72,7 +74,11 @@ public class GenericTokenParser {
           // close token was not found.
           builder.append(src, start, src.length - start);
           offset = src.length;
-        } else {
+          } else {
+          /**
+           * 【核心】将#{id}中的id封装成ParameterMapping，#{}替换成?
+           * {@link SqlSourceBuilder.ParameterMappingTokenHandler#handleToken(String)}
+           */
           builder.append(handler.handleToken(expression.toString()));
           offset = end + closeToken.length();
         }

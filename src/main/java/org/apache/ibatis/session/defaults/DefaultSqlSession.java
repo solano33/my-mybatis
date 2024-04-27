@@ -139,18 +139,26 @@ public class DefaultSqlSession implements SqlSession {
 
   @Override
   public <E> List<E> selectList(String statement, Object parameter) {
+    // RowBounds.DEFAULT：分页参数
     return this.selectList(statement, parameter, RowBounds.DEFAULT);
   }
 
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
+    // Executor.NO_RESULT_HANDLER：结果集处理器
     return selectList(statement, parameter, rowBounds, Executor.NO_RESULT_HANDLER);
   }
 
   private <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds, ResultHandler handler) {
     try {
+      // 通过statementId从Configuration对象中获取MappedStatement对象，有个map
       MappedStatement ms = configuration.getMappedStatement(statement);
       dirty |= ms.isDirtySelect();
+
+      /**
+       * wrapperCollection：将参数包装成Map对象。
+       * 这里executor：(在配置允许缓存的情况下)是一个CachingExecutor对象，是一个装饰器模式，内部持有一个Executor对象。
+       */
       return executor.query(ms, wrapCollection(parameter), rowBounds, handler);
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);

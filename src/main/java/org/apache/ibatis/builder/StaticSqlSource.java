@@ -43,6 +43,10 @@ public class StaticSqlSource implements SqlSource {
 
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+
+    /**
+     * sql：select * from user where id = ?
+     */
     return new BoundSql(configuration, sql, parameterMappings, parameterObject);
   }
 

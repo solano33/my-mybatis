@@ -200,9 +200,13 @@ public abstract class BaseExecutor implements Executor {
       throw new ExecutorException("Executor was closed.");
     }
     CacheKey cacheKey = new CacheKey();
+    // update会更新cacheKey的hash值
+    // 【cacheKey包含】statementId
     cacheKey.update(ms.getId());
+    // 【cacheKey包含】分页参数
     cacheKey.update(rowBounds.getOffset());
     cacheKey.update(rowBounds.getLimit());
+    // 【cacheKey包含】sql
     cacheKey.update(boundSql.getSql());
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     TypeHandlerRegistry typeHandlerRegistry = ms.getConfiguration().getTypeHandlerRegistry();
@@ -224,11 +228,13 @@ public abstract class BaseExecutor implements Executor {
           }
           value = metaObject.getValue(propertyName);
         }
+        // 【cacheKey包含】参数的值
         cacheKey.update(value);
       }
     }
     if (configuration.getEnvironment() != null) {
       // issue #176
+      // 【cacheKey包含】运行环境的id
       cacheKey.update(configuration.getEnvironment().getId());
     }
     return cacheKey;

@@ -34,6 +34,7 @@ import org.apache.ibatis.transaction.Transaction;
 
 /**
  * 【核心】装饰器模式
+ *
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
@@ -47,6 +48,7 @@ public class CachingExecutor implements Executor {
 
   /**
    * 装饰器模式
+   *
    * @param delegate
    */
   public CachingExecutor(Executor delegate) {
@@ -92,7 +94,7 @@ public class CachingExecutor implements Executor {
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler)
-      throws SQLException {
+    throws SQLException {
 
     //获取绑定的SQL语句，比如：select * from user where id = ?
     BoundSql boundSql = ms.getBoundSql(parameterObject);
@@ -101,23 +103,43 @@ public class CachingExecutor implements Executor {
     return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 
+  /**
+   * 二级缓存需要配置<cache><cache/>标签
+   * 一级缓存不需要配置，是默认开启的
+   */
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler,
-      CacheKey key, BoundSql boundSql) throws SQLException {
+                           CacheKey key, BoundSql boundSql) throws SQLException {
+
+    // 【核心】【二级缓存】获取二级缓存，这里需要在mybatis配置文件中配置<cache><cache/>标签
     Cache cache = ms.getCache();
     if (cache != null) {
+
+      // 刷新二级缓存(存在缓存且flushCache为true时),这里的flushCache是在mapper.xml中配置的
       flushCacheIfRequired(ms);
+
+      // 如果mapper.xml配置了useCache=true，并且没有指定ResultHandler，那么直接从缓存中获取数据
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
         @SuppressWarnings("unchecked")
+
+        // 从二级缓存中查询数据
         List<E> list = (List<E>) tcm.getObject(cache, key);
+
+        // 如果二级缓存中没有查询到数据，则查询一级缓存及数据库
         if (list == null) {
+
+          // 委托查询
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+
+          // 准备将查询结果放入二级缓存(这里只是存到map中，真正放入是在commit方法中)
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;
       }
     }
+
+    // 没有开启二级缓存，直接委托查询
     return delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 
@@ -144,12 +166,14 @@ public class CachingExecutor implements Executor {
   }
 
   private void ensureNoOutParams(MappedStatement ms, BoundSql boundSql) {
+
+    // 判断是否要处理存储过程，默认不是存储过程
     if (ms.getStatementType() == StatementType.CALLABLE) {
       for (ParameterMapping parameterMapping : boundSql.getParameterMappings()) {
         if (parameterMapping.getMode() != ParameterMode.IN) {
           throw new ExecutorException(
-              "Caching stored procedures with OUT params is not supported.  Please configure useCache=false in "
-                  + ms.getId() + " statement.");
+            "Caching stored procedures with OUT params is not supported.  Please configure useCache=false in "
+              + ms.getId() + " statement.");
         }
       }
     }
@@ -167,7 +191,7 @@ public class CachingExecutor implements Executor {
 
   @Override
   public void deferLoad(MappedStatement ms, MetaObject resultObject, String property, CacheKey key,
-      Class<?> targetType) {
+                        Class<?> targetType) {
     delegate.deferLoad(ms, resultObject, property, key, targetType);
   }
 

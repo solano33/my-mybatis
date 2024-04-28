@@ -131,30 +131,39 @@ public abstract class BaseExecutor implements Executor {
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler)
-      throws SQLException {
+    throws SQLException {
     BoundSql boundSql = ms.getBoundSql(parameter);
+
+    //创建CacheKey
     CacheKey key = createCacheKey(ms, parameter, rowBounds, boundSql);
+
+    // 使用CacheKey查询缓存，未命中则查询数据库
     return query(ms, parameter, rowBounds, resultHandler, key, boundSql);
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler,
-      CacheKey key, BoundSql boundSql) throws SQLException {
+                           CacheKey key, BoundSql boundSql) throws SQLException {
     ErrorContext.instance().resource(ms.getResource()).activity("executing a query").object(ms.getId());
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    // 1. 如果配置了flushCacheRequired=true，则会在执行器执行之前就清空本地一级缓存
     if (queryStack == 0 && ms.isFlushCacheRequired()) {
+      // 清空一级缓存
       clearLocalCache();
     }
     List<E> list;
     try {
       queryStack++;
+      // 【核心】【一级缓存】从一级缓存中获取数据
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
+        // 如果命中缓存，则处理本地缓存结果输出参数，存储过程的输出参数
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+        // 如果没有命中，则从数据库中查询
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
     } finally {
@@ -182,7 +191,7 @@ public abstract class BaseExecutor implements Executor {
 
   @Override
   public void deferLoad(MappedStatement ms, MetaObject resultObject, String property, CacheKey key,
-      Class<?> targetType) {
+                        Class<?> targetType) {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
@@ -284,10 +293,10 @@ public abstract class BaseExecutor implements Executor {
   protected abstract List<BatchResult> doFlushStatements(boolean isRollback) throws SQLException;
 
   protected abstract <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds,
-      ResultHandler resultHandler, BoundSql boundSql) throws SQLException;
+                                         ResultHandler resultHandler, BoundSql boundSql) throws SQLException;
 
   protected abstract <E> Cursor<E> doQueryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds,
-      BoundSql boundSql) throws SQLException;
+                                                 BoundSql boundSql) throws SQLException;
 
   protected void closeStatement(Statement statement) {
     if (statement != null) {
@@ -302,22 +311,17 @@ public abstract class BaseExecutor implements Executor {
   /**
    * Apply a transaction timeout.
    *
-   * @param statement
-   *          a current statement
-   *
-   * @throws SQLException
-   *           if a database access error occurs, this method is called on a closed <code>Statement</code>
-   *
-   * @since 3.4.0
-   *
+   * @param statement a current statement
+   * @throws SQLException if a database access error occurs, this method is called on a closed <code>Statement</code>
    * @see StatementUtil#applyTransactionTimeout(Statement, Integer, Integer)
+   * @since 3.4.0
    */
   protected void applyTransactionTimeout(Statement statement) throws SQLException {
     StatementUtil.applyTransactionTimeout(statement, statement.getQueryTimeout(), transaction.getTimeout());
   }
 
   private void handleLocallyCachedOutputParameters(MappedStatement ms, CacheKey key, Object parameter,
-      BoundSql boundSql) {
+                                                   BoundSql boundSql) {
     if (ms.getStatementType() == StatementType.CALLABLE) {
       final Object cachedParameter = localOutputParameterCache.getObject(key);
       if (cachedParameter != null && parameter != null) {
@@ -335,14 +339,25 @@ public abstract class BaseExecutor implements Executor {
   }
 
   private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds,
-      ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
+                                        ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
     List<E> list;
+
+    // 1. 首先向本地缓存中存入一个ExecutionPlaceholder的枚举占位value
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
     try {
+
+      /**
+       * 2. 执行查询
+       */
+
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
+
+      // 3. 从本地缓存中移除ExecutionPlaceholder的枚举占位value
       localCache.removeObject(key);
     }
+
+    // 4. 将查询结果存入本地缓存
     localCache.putObject(key, list);
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);
@@ -375,7 +390,7 @@ public abstract class BaseExecutor implements Executor {
 
     // issue #781
     public DeferredLoad(MetaObject resultObject, String property, CacheKey key, PerpetualCache localCache,
-        Configuration configuration, Class<?> targetType) {
+                        Configuration configuration, Class<?> targetType) {
       this.resultObject = resultObject;
       this.property = property;
       this.key = key;

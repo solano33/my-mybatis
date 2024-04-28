@@ -92,6 +92,10 @@ public class SimpleExecutor extends BaseExecutor {
     return Collections.emptyList();
   }
 
+  /**
+   * 1. 创建statement对象
+   * 2. 动态参数设置
+   */
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
 

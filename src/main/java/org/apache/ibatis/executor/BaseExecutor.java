@@ -149,20 +149,25 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+
     // 1. 如果配置了flushCacheRequired=true，则会在执行器执行之前就清空本地一级缓存
     if (queryStack == 0 && ms.isFlushCacheRequired()) {
+
       // 清空一级缓存
       clearLocalCache();
     }
     List<E> list;
     try {
       queryStack++;
+
       // 【核心】【一级缓存】从一级缓存中获取数据
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
+
         // 如果命中缓存，则处理本地缓存结果输出参数，存储过程的输出参数
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+
         // 如果没有命中，则从数据库中查询
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
@@ -349,7 +354,6 @@ public abstract class BaseExecutor implements Executor {
       /**
        * 2. 执行查询
        */
-
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
 
@@ -367,7 +371,9 @@ public abstract class BaseExecutor implements Executor {
 
   protected Connection getConnection(Log statementLog) throws SQLException {
     Connection connection = transaction.getConnection();
+
     if (statementLog.isDebugEnabled()) {
+      // 如果开启日志的话这里会进行代理
       return ConnectionLogger.newInstance(connection, statementLog, queryStack);
     }
     return connection;

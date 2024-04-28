@@ -33,6 +33,7 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
 /**
+ * 普通语句处理器
  * @author Clinton Begin
  */
 public class SimpleStatementHandler extends BaseStatementHandler {

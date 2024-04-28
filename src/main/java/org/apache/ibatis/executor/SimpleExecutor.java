@@ -58,10 +58,18 @@ public class SimpleExecutor extends BaseExecutor {
       BoundSql boundSql) throws SQLException {
     Statement stmt = null;
     try {
+
+      // 1. 获取 Configuration 配置对象
       Configuration configuration = ms.getConfiguration();
+
+      // 2. 创建 StatementHandler 语句处理器
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler,
           boundSql);
+
+      // 3. 准备 Statement 对象，主要包括创建statement对象以及动态参数的设置
       stmt = prepareStatement(handler, ms.getStatementLog());
+
+      // 4. 执行真正的数据库查询
       return handler.query(stmt, resultHandler);
     } finally {
       closeStatement(stmt);
@@ -86,8 +94,14 @@ public class SimpleExecutor extends BaseExecutor {
 
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
+
+    // 1. 获取代理后(如果开启日志debug的话，会做日志增强)的 Connection 连接对象
     Connection connection = getConnection(statementLog);
+
+    // 2. 创建 Statement 对象(可能是一个 PreparedStatement 或 CallableStatement 对象 或 SimpleStatement 对象)
     stmt = handler.prepare(connection, transaction.getTimeout());
+
+    // 3. 设置动态参数
     handler.parameterize(stmt);
     return stmt;
   }

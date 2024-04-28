@@ -727,8 +727,12 @@ public class Configuration {
 
   public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement,
       Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+
+    // 创建路由功能的StatementHandler，根据MappedStatement的StatementType属性，创建对应的StatementHandler
     StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject,
         rowBounds, resultHandler, boundSql);
+
+    // 插件机制：对核心对象进行拦截
     return (StatementHandler) interceptorChain.pluginAll(statementHandler);
   }
 

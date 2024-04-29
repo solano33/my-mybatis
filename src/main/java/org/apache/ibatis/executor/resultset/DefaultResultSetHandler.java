@@ -185,19 +185,31 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   //
   // HANDLE RESULT SETS
   //
+
+  /**
+   * 将Statement执行后产生的结果集(可能有多个结果集)映射为结果列表
+   * 1. 获取到ResultSet结果集对象
+   * 2. 获取映射关系
+   * 3. 根据映射关系封装实体
+   */
   @Override
   public List<Object> handleResultSets(Statement stmt) throws SQLException {
     ErrorContext.instance().activity("handling results").object(mappedStatement.getId());
 
+    // 创建结果容器
     final List<Object> multipleResults = new ArrayList<>();
 
     int resultSetCount = 0;
+    // 获取第一个结果集，将传统JDBC的Results包装成一个包含结果列元信息的ResultSetWrapper对象
     ResultSetWrapper rsw = getFirstResultSet(stmt);
 
+    // 获取所有要映射的ResultMap，这个就是我们在Mapper.xml中配置的ResultMap。如果配置了resultType，也会转换成ResultMap
     List<ResultMap> resultMaps = mappedStatement.getResultMaps();
     int resultMapCount = resultMaps.size();
     validateResultMapsCount(rsw, resultMapCount);
     while (rsw != null && resultMapCount > resultSetCount) {
+
+      // 根据映射关系将ResultSet结果集映射为结果列表
       ResultMap resultMap = resultMaps.get(resultSetCount);
       handleResultSet(rsw, resultMap, multipleResults, null);
       rsw = getNextResultSet(stmt);

@@ -318,10 +318,17 @@ public class DefaultResultSetHandler implements ResultSetHandler {
       if (parentMapping != null) {
         handleRowValues(rsw, resultMap, null, RowBounds.DEFAULT, parentMapping);
       } else if (resultHandler == null) {
+
+        // 实例化DefaultResultHandler
         DefaultResultHandler defaultResultHandler = new DefaultResultHandler(objectFactory);
+
+        // 对结果集进行映射，转换的结果存入defaultResultHandler中
         handleRowValues(rsw, resultMap, defaultResultHandler, rowBounds, null);
+
+        // List<List<User>>
         multipleResults.add(defaultResultHandler.getResultList());
       } else {
+        // 存储过程相关
         handleRowValues(rsw, resultMap, resultHandler, rowBounds, null);
       }
     } finally {

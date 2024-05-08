@@ -348,11 +348,17 @@ public class DefaultResultSetHandler implements ResultSetHandler {
 
   public void handleRowValues(ResultSetWrapper rsw, ResultMap resultMap, ResultHandler<?> resultHandler,
       RowBounds rowBounds, ResultMapping parentMapping) throws SQLException {
+
+    // 是否有内置嵌套的结果映射
     if (resultMap.hasNestedResultMaps()) {
       ensureNoRowBounds();
       checkResultHandler();
+
+      //嵌套结果映射
       handleRowValuesForNestedResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
     } else {
+
+      // 简单结果映射
       handleRowValuesForSimpleResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
     }
   }
@@ -378,11 +384,21 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   private void handleRowValuesForSimpleResultMap(ResultSetWrapper rsw, ResultMap resultMap,
       ResultHandler<?> resultHandler, RowBounds rowBounds, ResultMapping parentMapping) throws SQLException {
     DefaultResultContext<Object> resultContext = new DefaultResultContext<>();
+
+    // 结果集信息
     ResultSet resultSet = rsw.getResultSet();
+
+    // 根据分页信息，提取相应数据
     skipRows(resultSet, rowBounds);
     while (shouldProcessMoreRows(resultContext, rowBounds) && !resultSet.isClosed() && resultSet.next()) {
+
+      // 通过<resultMap>标签的子标签<discriminator>对结果映射进行鉴别
       ResultMap discriminatedResultMap = resolveDiscriminatedResultMap(resultSet, resultMap, null);
+
+      // 将查询结果封装到POJO中
       Object rowValue = getRowValue(rsw, discriminatedResultMap, null);
+
+      // 保存映射结果
       storeObject(resultHandler, resultContext, rowValue, parentMapping, resultSet);
     }
   }
@@ -426,14 +442,25 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   //
 
   private Object getRowValue(ResultSetWrapper rsw, ResultMap resultMap, String columnPrefix) throws SQLException {
+
+    // 延迟加载的映射信息
     final ResultLoaderMap lazyLoader = new ResultLoaderMap();
+
+    // 根据resultType的值创建要映射的PO类对象，这里只是构建出来，里面并没有值
     Object rowValue = createResultObject(rsw, resultMap, lazyLoader, columnPrefix);
     if (rowValue != null && !hasTypeHandlerForResultObject(rsw, resultMap.getType())) {
+
+      // 获取MetaObject对象，为后面赋值做准备
       final MetaObject metaObject = configuration.newMetaObject(rowValue);
       boolean foundValues = this.useConstructorMappings;
+
+      // 是否应用自动映射。也就是有配置resultType
       if (shouldApplyAutomaticMappings(resultMap, false)) {
+        // 根据columnName和type属性名进行自动映射
         foundValues = applyAutomaticMappings(rsw, resultMap, metaObject, columnPrefix) || foundValues;
       }
+
+      // 【核心】这里会进行具体字段属性赋值
       foundValues = applyPropertyMappings(rsw, resultMap, metaObject, lazyLoader, columnPrefix) || foundValues;
       foundValues = lazyLoader.size() > 0 || foundValues;
       rowValue = foundValues || configuration.isReturnInstanceForEmptyRow() ? rowValue : null;
@@ -608,6 +635,8 @@ public class DefaultResultSetHandler implements ResultSetHandler {
         }
         if (value != null || configuration.isCallSettersOnNulls() && !mapping.primitive) {
           // gcode issue #377, call setter on nulls (value is not 'found')
+
+          // 【核心】关键赋值操作
           metaObject.setValue(mapping.property, value);
         }
       }

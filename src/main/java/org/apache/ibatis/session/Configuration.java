@@ -740,6 +740,9 @@ public class Configuration {
     return newExecutor(transaction, defaultExecutorType);
   }
 
+  /**
+   * 【核心】构建执行器对象
+   */
   public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
     executorType = executorType == null ? defaultExecutorType : executorType;
     Executor executor;
@@ -751,7 +754,7 @@ public class Configuration {
       executor = new SimpleExecutor(this, transaction);
     }
 
-    // 这里标识了如果允许缓存，则会通过CachingExecutor去进行装饰
+    // 【核心】这里标识了如果允许缓存，则会通过CachingExecutor去进行装饰
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }

@@ -110,9 +110,12 @@ public class XMLConfigBuilder extends BaseBuilder {
     this.parser = parser;
   }
 
+  /**
+   * 【核心】将xml配置文件解析成Document，从而解析配置到Configuration
+   */
   public Configuration parse() {
 
-    // 这个配置文件只需要被解析一次
+    // 这个配置文件只需要被解析一次，debug时会触发
     if (parsed) {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }

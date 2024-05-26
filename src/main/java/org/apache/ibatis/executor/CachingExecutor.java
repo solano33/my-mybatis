@@ -92,6 +92,9 @@ public class CachingExecutor implements Executor {
     return delegate.queryCursor(ms, parameter, rowBounds);
   }
 
+  /**
+   * 【核心】首先获取boundSql，然后生成CacheKey，接着委托给query方法
+   */
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler)
     throws SQLException {
@@ -104,6 +107,7 @@ public class CachingExecutor implements Executor {
   }
 
   /**
+   * 【核心】
    * 二级缓存需要配置<cache><cache/>标签
    * 一级缓存不需要配置，是默认开启的
    */

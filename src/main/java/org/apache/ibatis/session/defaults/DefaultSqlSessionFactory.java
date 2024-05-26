@@ -44,7 +44,13 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
   @Override
   public SqlSession openSession() {
-    // 【核心】
+
+    /**
+     * 【核心】
+     * 默认执行器类型：SimpleExecutor
+     * 事务隔离级别：null
+     * 是否自动提交：false
+     */
     return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
   }
 

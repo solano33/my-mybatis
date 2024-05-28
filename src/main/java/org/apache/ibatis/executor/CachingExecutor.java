@@ -133,7 +133,7 @@ public class CachingExecutor implements Executor {
         // 如果二级缓存中没有查询到数据，则查询一级缓存及数据库
         if (list == null) {
 
-          // 委托查询
+          // 委托查询：这里会首先从一级缓存中查询，再从数据库中查询
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
 
           // 准备将查询结果放入二级缓存(这里只是存到map中，真正放入是在commit方法中)
